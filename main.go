@@ -12,14 +12,21 @@ import (
 	"./hackernews"
 )
 
-var configFilePath = "" // set in init()
+// Path to the config file, set in init() to expanded "~/.hngorc"
+var configFilePath = ""
 
-var config = struct {
-	ApiBaseUrl  string
-	ItemsInList int
-}{"https://hacker-news.firebaseio.com/v0/", 10}
+// Configuration with default values
+// Will be overridden when the real config is read
+// Or saved as default if no config exist
+var config = hackernews.Config{
+	ApiBaseUrl:    "https://hacker-news.firebaseio.com/v0/",
+	ItemsLimit:    10,
+	CacheFilePath: "/tmp/hngocache",
+}
 
+// Initialization
 func init() {
+
 	// Set the config file path
 	maybePath, err := getConfigFilePath()
 	if err != nil {
@@ -32,13 +39,16 @@ func init() {
 	bs, err := ioutil.ReadFile(configFilePath)
 	if err != nil {
 		// On error try to create a new config file with default values
-		fmt.Printf("Config file %q not found. Will try to create one for you.\n", configFilePath)
+		fmt.Printf("Config file %q not found.\n", configFilePath)
 		err = createConfigFile()
 		if err != nil {
 			fmt.Printf("Could not create config file %q: %v\n", configFilePath, err.Error())
 			os.Exit(1)
 		}
 
+		fmt.Printf("Created config file %q with default values\n", configFilePath)
+
+		// No need to continue, the default config is already there
 		return
 	}
 
@@ -50,13 +60,16 @@ func init() {
 	}
 }
 
+// Primus Motor
 func main() {
 
+	// Default if no args
 	if len(os.Args) < 2 {
 		showTopStories()
 		return
 	}
 
+	// Try to interpret the first arg as an index
 	i, err := getIndexFromArgs()
 	if err != nil {
 		fmt.Println(err.Error())
@@ -64,19 +77,20 @@ func main() {
 	}
 
 	showStoryByIndex(i)
-
 }
 
+// Fetch a list of top stories from Hacker News
 func showTopStories() {
 
 	fmt.Println("Loading Hacker News Top Stories...")
 
-	hn, _ := hackernews.NewHackerNews(config.ApiBaseUrl)
+	hn := hackernews.New(config)
 
-	stories, err := hn.GetTopStories(config.ItemsInList)
+	stories, err := hn.GetTopStories()
 	if err != nil {
 		fmt.Println("Could not list top stories")
 		fmt.Printf("Error: %v\n", err.Error())
+		return
 	}
 
 	for _, story := range stories {
@@ -86,12 +100,13 @@ func showTopStories() {
 
 func showStoryByIndex(index int) {
 
-	hn, _ := hackernews.NewHackerNews(config.ApiBaseUrl)
+	hn := hackernews.New(config)
 
 	story, err := hn.GetStoryByIndex(index)
 	if err != nil {
 		fmt.Println("Could not get story")
 		fmt.Printf("Error: %v\n", err.Error())
+		return
 	}
 
 	fmt.Printf("%#v\n", story)
@@ -106,7 +121,7 @@ func getIndexFromArgs() (int, error) {
 		return -1, errors.New("Argument not a number: " + err.Error())
 	}
 
-	if i < 0 || i >= config.ItemsInList {
+	if i < 0 || i >= config.ItemsLimit {
 		return -1, errors.New("Index out of range")
 	}
 
