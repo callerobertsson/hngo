@@ -9,7 +9,16 @@ import (
 )
 
 type HackerNews struct {
-	baseUrl string
+	config Config
+}
+
+type Config struct {
+	ApiBaseUrl    string
+	ItemsLimit    int
+	CacheFilePath string
+	OpenCommand   string
+	// TODO: Add CacheTimeToLiveSecs int
+	// TODO: Add ParallellMode bool
 }
 
 type Story struct {
@@ -21,16 +30,16 @@ type Story struct {
 	Url     string
 }
 
-func NewHackerNews(baseUrl string) (HackerNews, error) {
-	return HackerNews{
-		baseUrl: baseUrl,
-	}, nil
+// Create a new HackerNews
+func New(config Config) HackerNews {
+	return HackerNews{config}
 }
 
-func (hn HackerNews) GetTopStories(limit int) ([]Story, error) {
+// Fetch to stories and store them in cache file
+func (hn HackerNews) GetTopStories() ([]Story, error) {
 
 	// Get top story ids
-	res, err := http.Get(hn.baseUrl + "topstories.json")
+	res, err := http.Get(hn.config.ApiBaseUrl + "topstories.json")
 	if err != nil {
 		return []Story{}, err
 	}
@@ -47,9 +56,11 @@ func (hn HackerNews) GetTopStories(limit int) ([]Story, error) {
 		return []Story{}, err
 	}
 
-	ids = ids[:limit]
+	ids = ids[:hn.config.ItemsLimit]
 
 	stories := make([]Story, len(ids))
+
+	// TODO: Add serial mode when hn.config.ParallellMode is false
 
 	sem := make(chan bool, len(ids))
 
@@ -69,7 +80,7 @@ func (hn HackerNews) GetTopStories(limit int) ([]Story, error) {
 		<-sem
 	}
 
-	err = storeCacheFile(ids)
+	err = hn.storeCacheFile(stories)
 	if err != nil {
 		return stories, err
 	}
@@ -79,21 +90,23 @@ func (hn HackerNews) GetTopStories(limit int) ([]Story, error) {
 
 func (hn HackerNews) GetStoryByIndex(index int) (Story, error) {
 
-	ids, err := readCacheFile()
+	stories, err := hn.readCacheFile()
 	if err != nil {
+		// TODO: Return a Story containing error message?
 		return Story{}, err
 	}
 
-	if index < 0 || index >= len(ids) {
+	if index < 0 || index >= len(stories) {
+		// TODO: Return a Story containing error message?
 		return Story{}, errors.New("Index out of range")
 	}
 
-	return hn.GetStory(ids[index])
+	return stories[index], nil
 }
 
 func (hn HackerNews) GetStory(id int) (Story, error) {
 
-	url := hn.baseUrl + "item/" + strconv.Itoa(id) + ".json"
+	url := hn.config.ApiBaseUrl + "item/" + strconv.Itoa(id) + ".json"
 
 	res, err := http.Get(url)
 	if err != nil {
@@ -107,15 +120,10 @@ func (hn HackerNews) GetStory(id int) (Story, error) {
 	}
 
 	var item struct {
-		//by          string `json:"by"`
-		//descendants int    `json:"descendants"`
-		Id int `json:"id"`
-		//kids        []int  `json:"kids"`
-		//score int    `json:"score"`
-		//time  int    `json:"time"`
+		Id    int    `json:"id"`
 		Title string `json:"title"`
-		//kind  string `json:"type"`
-		Url string `json:"url"`
+		Url   string `json:"url"`
+		// other attributs are ignored
 	}
 
 	err = json.Unmarshal(jsonItem, &item)
@@ -132,34 +140,24 @@ func (hn HackerNews) GetStory(id int) (Story, error) {
 	return story, nil
 }
 
-func storeCacheFile(ids []int) error {
+func (hn HackerNews) storeCacheFile(stories []Story) error {
 
-	// TODO: Move cache file path to settings
-	cacheFile := "/tmp/hncache"
-
-	b, err := json.Marshal(ids)
+	bs, err := json.Marshal(stories)
 	if err != nil {
 		return err
 	}
 
-	err = ioutil.WriteFile(cacheFile, b, 0644)
-	if err != nil {
-		return err
-	}
-
-	return nil
+	return ioutil.WriteFile(hn.config.CacheFilePath, bs, 0644)
 }
 
-func readCacheFile() ([]int, error) {
+func (hn HackerNews) readCacheFile() ([]Story, error) {
 
-	// TODO: Define cache file in settings
-	cacheFile := "/tmp/hncache"
+	bs, err := ioutil.ReadFile(hn.config.CacheFilePath)
+	if err != nil {
+		return []Story{}, err
+	}
 
-	b, err := ioutil.ReadFile(cacheFile)
+	var stories []Story
 
-	var ids []int
-
-	err = json.Unmarshal(b, &ids)
-
-	return ids, err
+	return stories, json.Unmarshal(bs, &stories)
 }
