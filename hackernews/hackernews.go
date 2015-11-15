@@ -16,6 +16,7 @@ type Config struct {
 	ApiBaseUrl    string
 	ItemsLimit    int
 	CacheFilePath string
+	OpenCommand   string
 	// TODO: Add CacheTimeToLiveSecs int
 	// TODO: Add ParallellMode bool
 }

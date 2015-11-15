@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"os"
+	"os/exec"
 	"os/user"
 	"strconv"
 
@@ -22,6 +23,7 @@ var config = hackernews.Config{
 	ApiBaseUrl:    "https://hacker-news.firebaseio.com/v0/",
 	ItemsLimit:    10,
 	CacheFilePath: "/tmp/hngocache",
+	OpenCommand:   "echo",
 }
 
 // Initialization
@@ -109,7 +111,20 @@ func showStoryByIndex(index int) {
 		return
 	}
 
-	fmt.Printf("%#v\n", story)
+	//fmt.Printf("%#v\n", story)
+	//fmt.Printf("Executing: %v %v\n", config.OpenCommand, story.Url)
+
+	cmd := exec.Command(config.OpenCommand, story.Url)
+	if err != nil {
+		fmt.Printf("Error opening command pipe: %v", err.Error())
+		return
+	}
+
+	err = cmd.Start()
+	if err != nil {
+		fmt.Printf("Error: could not %q URL %q\n", config.OpenCommand, story.Url)
+		return
+	}
 }
 
 // Parses the first command line argument as an integer and
