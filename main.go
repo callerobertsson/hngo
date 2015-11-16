@@ -78,7 +78,7 @@ func main() {
 		os.Exit(1)
 	}
 
-	showStoryByIndex(i)
+	openStoryByIndex(i)
 }
 
 // Fetch a list of top stories from Hacker News
@@ -95,35 +95,30 @@ func showTopStories() {
 		return
 	}
 
-	for _, story := range stories {
-		fmt.Printf("%2v: %v\n", story.I, story.Title)
+	for i, story := range stories {
+		fmt.Printf("%2v: %v\n", i, story.Title)
 	}
 }
 
-func showStoryByIndex(index int) {
+// Use OpenCommand to open the Story with index number
+func openStoryByIndex(index int) {
 
 	hn := hackernews.New(config)
 
-	story, err := hn.GetStoryByIndex(index)
+	story, err := hn.GetCachedStoryByIndex(index)
 	if err != nil {
 		fmt.Println("Could not get story")
 		fmt.Printf("Error: %v\n", err.Error())
 		return
 	}
 
-	//fmt.Printf("%#v\n", story)
-	fmt.Printf("Executing: %v %v\n", config.OpenCommand, story.Url)
+	fmt.Printf("Story: %v\n  Date: %v\n  Url: %v\n", story.Title, story.Date, story.Url)
+	fmt.Printf("Command: %v %v\n", config.OpenCommand, story.Url)
 
 	cmd := exec.Command(config.OpenCommand, story.Url)
-	if err != nil {
-		fmt.Printf("Error opening command pipe: %v", err.Error())
-		return
-	}
 
-	err = cmd.Start()
-	if err != nil {
+	if cmd.Start() != nil {
 		fmt.Printf("Error: could not %q URL %q\n", config.OpenCommand, story.Url)
-		return
 	}
 }
 
@@ -157,6 +152,7 @@ func createConfigFile() error {
 
 // Used to figure out the path to the configuration file
 func getConfigFilePath() (string, error) {
+
 	usr, err := user.Current()
 	if err != nil {
 		return "", err

@@ -8,21 +8,22 @@ import (
 	"strconv"
 )
 
+// The Hacker News struct
 type HackerNews struct {
 	config Config
 }
 
+// Configuration, stored in ~/.hngorc
 type Config struct {
 	ApiBaseUrl    string
 	ItemsLimit    int
 	CacheFilePath string
 	OpenCommand   string
 	// TODO: Add CacheTimeToLiveSecs int
-	// TODO: Add ParallellMode bool
 }
 
+// A Story
 type Story struct {
-	I       int
 	Id      int
 	Title   string
 	Date    string
@@ -51,57 +52,35 @@ func (hn HackerNews) GetTopStories() ([]Story, error) {
 	}
 
 	var ids []int
-	err = json.Unmarshal(jsonIds, &ids)
-	if err != nil {
+	if json.Unmarshal(jsonIds, &ids) != nil {
 		return []Story{}, err
 	}
 
+	// Limit the number of Story IDs
 	ids = ids[:hn.config.ItemsLimit]
-
 	stories := make([]Story, len(ids))
-
-	// TODO: Add serial mode when hn.config.ParallellMode is false
 
 	sem := make(chan bool, len(ids))
 
+	// Fetch all Stories in parallel
 	for i, id := range ids {
 		go func(i, id int) {
 			story, err := hn.GetStory(id)
 			if err != nil {
-				story = Story{i, id, "ERROR", "", err.Error(), "no url"}
+				story = Story{id, "ERROR", "", err.Error(), "no url"}
 			}
-			story.I = i
 			stories[i] = story
 			sem <- true
 		}(i, id)
 	}
 
+	// Wait for each go routine to signal
 	for i := 0; i < len(ids); i++ {
 		<-sem
 	}
 
-	err = hn.storeCacheFile(stories)
-	if err != nil {
-		return stories, err
-	}
-
-	return stories, nil
-}
-
-func (hn HackerNews) GetStoryByIndex(index int) (Story, error) {
-
-	stories, err := hn.readCacheFile()
-	if err != nil {
-		// TODO: Return a Story containing error message?
-		return Story{}, err
-	}
-
-	if index < 0 || index >= len(stories) {
-		// TODO: Return a Story containing error message?
-		return Story{}, errors.New("Index out of range")
-	}
-
-	return stories[index], nil
+	// Store the cache and return stories
+	return stories, hn.storeCacheFile(stories)
 }
 
 func (hn HackerNews) GetStory(id int) (Story, error) {
@@ -131,33 +110,23 @@ func (hn HackerNews) GetStory(id int) (Story, error) {
 		return Story{}, err
 	}
 
-	story := Story{
+	return Story{
 		Id:    item.Id,
 		Title: item.Title,
 		Url:   item.Url,
-	}
-
-	return story, nil
+	}, nil
 }
 
-func (hn HackerNews) storeCacheFile(stories []Story) error {
+func (hn HackerNews) GetCachedStoryByIndex(index int) (Story, error) {
 
-	bs, err := json.Marshal(stories)
+	stories, err := hn.readCacheFile()
 	if err != nil {
-		return err
+		return Story{}, err
 	}
 
-	return ioutil.WriteFile(hn.config.CacheFilePath, bs, 0644)
-}
-
-func (hn HackerNews) readCacheFile() ([]Story, error) {
-
-	bs, err := ioutil.ReadFile(hn.config.CacheFilePath)
-	if err != nil {
-		return []Story{}, err
+	if index < 0 || index >= len(stories) {
+		return Story{}, errors.New("Index out of range")
 	}
 
-	var stories []Story
-
-	return stories, json.Unmarshal(bs, &stories)
+	return stories[index], nil
 }
