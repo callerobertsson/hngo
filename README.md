@@ -2,6 +2,10 @@
 
 Simple command line program for listing and viewing Hacker News (https://news.ycombinator.com/).
 
+Tested on OSX and Linux. 
+
+Not tested on Windows where it might be some issues with creating the config file.
+
 ## Status
 
 `hngo` - fetches the top stories
