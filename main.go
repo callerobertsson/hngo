@@ -112,7 +112,7 @@ func showStoryByIndex(index int) {
 	}
 
 	//fmt.Printf("%#v\n", story)
-	//fmt.Printf("Executing: %v %v\n", config.OpenCommand, story.Url)
+	fmt.Printf("Executing: %v %v\n", config.OpenCommand, story.Url)
 
 	cmd := exec.Command(config.OpenCommand, story.Url)
 	if err != nil {
