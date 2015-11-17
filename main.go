@@ -141,7 +141,7 @@ func getIndexFromArgs() (int, error) {
 // Saves config as JSON to the config file
 func createConfigFile() error {
 
-	bs, err := json.Marshal(config)
+	bs, err := json.MarshalIndent(config, "", "\t")
 	if err != nil {
 		fmt.Println("Affen!")
 		return err
