@@ -15,10 +15,11 @@ type HackerNews struct {
 
 // Configuration, stored in ~/.hngorc
 type Config struct {
-	ApiBaseUrl    string
-	ItemsLimit    int
-	CacheFilePath string
-	OpenCommand   string
+	ApiBaseUrl        string
+	ItemsLimit        int
+	CacheFilePath     string
+	OpenCommand       []string
+	ShowCommandOutput bool
 	// TODO: Add CacheTimeToLiveSecs int
 }
 
