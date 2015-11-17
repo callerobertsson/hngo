@@ -115,13 +115,13 @@ func openStoryByIndex(index int) {
 	}
 
 	args := makeCommandArgs(config.OpenCommand, story.Url)
-	show := "hide"
+	showHide := "hiding"
 	if config.ShowCommandOutput {
-		show = "show"
+		showHide = "showing"
 	}
 
 	fmt.Printf("Story: %v\n  Date: %v\n  Url: %v\n", story.Title, story.Date, story.Url)
-	fmt.Printf("Command: %v (%v output)\n\n", strings.Join(args, " "), show)
+	fmt.Printf("Command: %v (%v output)\n\n", strings.Join(args, " "), showHide)
 
 	cmd := exec.Command(args[0], args[1:]...)
 	out, err := cmd.StdoutPipe()
