@@ -20,13 +20,15 @@ When run first time the config file (~/.hngorc) will be created with default val
         "ApiBaseUrl": "https://hacker-news.firebaseio.com/v0/",
         "ItemsLimit": 10,
         "CacheFilePath": "/tmp/hngocache",
-        "OpenCommand": "echo"
+        "OpenCommand": ["echo", "-n"],
+        "ShowCommandOutput", true
     }
 
 You would like to change OpenCommand to something better, like "open" for OSX.
 
-Note that the `echo` command doesn't really print anything in the console.
-It's run in a different process without access to stdout of the current console.
+OpenCommand is an array of strings forming the open command and its options. 
+The Story URL is appended to the end as the last option.
+A future improvement will be to add a placeholder for where to insert the URL.
 
 ## Wishlist
 
@@ -43,11 +45,9 @@ Add a symbol indicating status for each story in the story list.
      4 - A story that is in the same position since last fetch
      5 E A story that has some kind of error
 
-### More general open command
+### Improve OpenCommand
 
-Make OpenCommand into an array so it can accept options for the command.
-
-Perhaps add a tag for the Storys URL so it can be anywhere in the command line.
+Add a tag for the Storys URL so it can be anywhere in the command line.
 
 ### Improve warning
 
