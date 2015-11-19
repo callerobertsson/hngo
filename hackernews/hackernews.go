@@ -6,6 +6,7 @@ import (
 	"io/ioutil"
 	"net/http"
 	"strconv"
+	"time"
 )
 
 // The Hacker News struct
@@ -15,10 +16,11 @@ type HackerNews struct {
 
 // Configuration, stored in ~/.hngorc
 type Config struct {
-	ApiBaseUrl    string
-	ItemsLimit    int
-	CacheFilePath string
-	OpenCommand   string
+	ApiBaseUrl        string
+	ItemsLimit        int
+	CacheFilePath     string
+	OpenCommand       []string
+	ShowCommandOutput bool
 	// TODO: Add CacheTimeToLiveSecs int
 }
 
@@ -102,6 +104,7 @@ func (hn HackerNews) GetStory(id int) (Story, error) {
 		Id    int    `json:"id"`
 		Title string `json:"title"`
 		Url   string `json:"url"`
+		Time  int    `json:"time"`
 		// other attributs are ignored
 	}
 
@@ -110,10 +113,13 @@ func (hn HackerNews) GetStory(id int) (Story, error) {
 		return Story{}, err
 	}
 
+	t := time.Unix(int64(item.Time), 0)
+
 	return Story{
 		Id:    item.Id,
 		Title: item.Title,
 		Url:   item.Url,
+		Date:  t.String(),
 	}, nil
 }
 

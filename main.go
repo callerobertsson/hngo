@@ -9,6 +9,7 @@ import (
 	"os/exec"
 	"os/user"
 	"strconv"
+	"strings"
 
 	"./hackernews"
 )
@@ -20,10 +21,11 @@ var configFilePath = ""
 // Will be overridden when the real config is read
 // Or saved as default if no config exist
 var config = hackernews.Config{
-	ApiBaseUrl:    "https://hacker-news.firebaseio.com/v0/",
-	ItemsLimit:    10,
-	CacheFilePath: "/tmp/hngocache",
-	OpenCommand:   "echo",
+	ApiBaseUrl:        "https://hacker-news.firebaseio.com/v0/",
+	ItemsLimit:        10,
+	CacheFilePath:     "/tmp/hngocache",
+	OpenCommand:       []string{"echo"},
+	ShowCommandOutput: true,
 }
 
 // Initialization
@@ -112,13 +114,29 @@ func openStoryByIndex(index int) {
 		return
 	}
 
-	fmt.Printf("Story: %v\n  Date: %v\n  Url: %v\n", story.Title, story.Date, story.Url)
-	fmt.Printf("Command: %v %v\n", config.OpenCommand, story.Url)
+	args := makeCommandArgs(config.OpenCommand, story.Url)
+	showHide := "hiding"
+	if config.ShowCommandOutput {
+		showHide = "showing"
+	}
 
-	cmd := exec.Command(config.OpenCommand, story.Url)
+	fmt.Printf("Story: %v\n  Date: %v\n  Url: %v\n", story.Title, story.Date, story.Url)
+	fmt.Printf("Command: %v (%v output)\n\n", strings.Join(args, " "), showHide)
+
+	cmd := exec.Command(args[0], args[1:]...)
+	out, err := cmd.StdoutPipe()
+	if err != nil {
+		fmt.Println("Problems opening command")
+		return
+	}
 
 	if cmd.Start() != nil {
-		fmt.Printf("Error: could not %q URL %q\n", config.OpenCommand, story.Url)
+		fmt.Printf("Error: could not execute command %q\n", strings.Join(args, " "), story.Url)
+	}
+
+	if config.ShowCommandOutput {
+		bs, _ := ioutil.ReadAll(out)
+		fmt.Println(string(bs))
 	}
 }
 
@@ -141,7 +159,7 @@ func getIndexFromArgs() (int, error) {
 // Saves config as JSON to the config file
 func createConfigFile() error {
 
-	bs, err := json.Marshal(config)
+	bs, err := json.MarshalIndent(config, "", "\t")
 	if err != nil {
 		fmt.Println("Affen!")
 		return err
@@ -159,4 +177,9 @@ func getConfigFilePath() (string, error) {
 	}
 
 	return usr.HomeDir + "/.hngorc", nil
+}
+
+func makeCommandArgs(args []string, url string) []string {
+	// TODO: Replace place holder with url
+	return append(args, url)
 }
