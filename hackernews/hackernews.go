@@ -1,3 +1,4 @@
+// Package hackernews implements the HackerNews type used to fetch stories from HackerNews
 package hackernews
 
 import (
@@ -9,40 +10,39 @@ import (
 	"time"
 )
 
-// The Hacker News struct
+// HackerNews type
 type HackerNews struct {
 	config Config
 }
 
-// Configuration, stored in ~/.hngorc
+// Config contains the settings for HackerNews type, stored in ~/.hngorc
 type Config struct {
-	ApiBaseUrl        string
+	APIBaseURL        string
 	ItemsLimit        int
 	CacheFilePath     string
 	OpenCommand       []string
 	ShowCommandOutput bool
-	// TODO: Add CacheTimeToLiveSecs int
 }
 
-// A Story
+// Story holds information about a HackerNews story
 type Story struct {
-	Id      int
+	ID      int
 	Title   string
 	Date    string
 	Content string
-	Url     string
+	URL     string
 }
 
-// Create a new HackerNews
+// New creates a new HackerNews
 func New(config Config) HackerNews {
 	return HackerNews{config}
 }
 
-// Fetch to stories and store them in cache file
+// GetTopStories fetches top stories and store them in cache file
 func (hn HackerNews) GetTopStories() ([]Story, error) {
 
 	// Get top story ids
-	res, err := http.Get(hn.config.ApiBaseUrl + "topstories.json")
+	res, err := http.Get(hn.config.APIBaseURL + "topstories.json")
 	if err != nil {
 		return []Story{}, err
 	}
@@ -85,9 +85,10 @@ func (hn HackerNews) GetTopStories() ([]Story, error) {
 	return stories, hn.storeCacheFile(stories)
 }
 
+// GetStory fetches a story with ID id from HackerNews
 func (hn HackerNews) GetStory(id int) (Story, error) {
 
-	url := hn.config.ApiBaseUrl + "item/" + strconv.Itoa(id) + ".json"
+	url := hn.config.APIBaseURL + "item/" + strconv.Itoa(id) + ".json"
 
 	res, err := http.Get(url)
 	if err != nil {
@@ -101,9 +102,9 @@ func (hn HackerNews) GetStory(id int) (Story, error) {
 	}
 
 	var item struct {
-		Id    int    `json:"id"`
+		ID    int    `json:"id"`
 		Title string `json:"title"`
-		Url   string `json:"url"`
+		URL   string `json:"url"`
 		Time  int    `json:"time"`
 		// other attributs are ignored
 	}
@@ -116,13 +117,14 @@ func (hn HackerNews) GetStory(id int) (Story, error) {
 	t := time.Unix(int64(item.Time), 0)
 
 	return Story{
-		Id:    item.Id,
+		ID:    item.ID,
 		Title: item.Title,
-		Url:   item.Url,
+		URL:   item.URL,
 		Date:  t.String(),
 	}, nil
 }
 
+// GetCachedStoryByIndex fetches a story from the cache
 func (hn HackerNews) GetCachedStoryByIndex(index int) (Story, error) {
 
 	stories, err := hn.readCacheFile()
@@ -131,7 +133,7 @@ func (hn HackerNews) GetCachedStoryByIndex(index int) (Story, error) {
 	}
 
 	if index < 0 || index >= len(stories) {
-		return Story{}, errors.New("Index out of range")
+		return Story{}, errors.New("index out of range")
 	}
 
 	return stories[index], nil

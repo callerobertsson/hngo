@@ -1,3 +1,4 @@
+// Package main implements CLI access to HackerNews
 package main
 
 import (
@@ -11,7 +12,7 @@ import (
 	"strconv"
 	"strings"
 
-	"./hackernews"
+	"github.com/callerobertsson/hngo/hackernews"
 )
 
 // Path to the config file, set in init() to expanded "~/.hngorc"
@@ -21,7 +22,7 @@ var configFilePath = ""
 // Will be overridden when the real config is read
 // Or saved as default if no config exist
 var config = hackernews.Config{
-	ApiBaseUrl:        "https://hacker-news.firebaseio.com/v0/",
+	APIBaseURL:        "https://hacker-news.firebaseio.com/v0/",
 	ItemsLimit:        10,
 	CacheFilePath:     "/tmp/hngocache",
 	OpenCommand:       []string{"echo"},
@@ -114,13 +115,13 @@ func openStoryByIndex(index int) {
 		return
 	}
 
-	args := makeCommandArgs(config.OpenCommand, story.Url)
+	args := makeCommandArgs(config.OpenCommand, story.URL)
 	showHide := "hiding"
 	if config.ShowCommandOutput {
 		showHide = "showing"
 	}
 
-	fmt.Printf("Story: %v\n  Date: %v\n  Url: %v\n", story.Title, story.Date, story.Url)
+	fmt.Printf("Story: %v\n  Date: %v\n  URL: %v\n", story.Title, story.Date, story.URL)
 	fmt.Printf("Command: %v (%v output)\n\n", strings.Join(args, " "), showHide)
 
 	cmd := exec.Command(args[0], args[1:]...)
@@ -131,7 +132,7 @@ func openStoryByIndex(index int) {
 	}
 
 	if cmd.Start() != nil {
-		fmt.Printf("Error: could not execute command %q\n", strings.Join(args, " "), story.Url)
+		fmt.Printf("Error: could not execute command %v\n", strings.Join(args, " "))
 	}
 
 	if config.ShowCommandOutput {
@@ -150,7 +151,7 @@ func getIndexFromArgs() (int, error) {
 	}
 
 	if i < 0 || i >= config.ItemsLimit {
-		return -1, errors.New("Index out of range")
+		return -1, errors.New("index out of range")
 	}
 
 	return i, nil
@@ -180,6 +181,5 @@ func getConfigFilePath() (string, error) {
 }
 
 func makeCommandArgs(args []string, url string) []string {
-	// TODO: Replace place holder with url
 	return append(args, url)
 }

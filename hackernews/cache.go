@@ -1,3 +1,4 @@
+// Package hackernews cache functions
 package hackernews
 
 import (
